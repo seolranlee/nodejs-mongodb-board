@@ -1,0 +1,23 @@
+{
+  "name": "nodejs-mongodb-board",
+  "version": "1.0.0",
+  "description": "node.js+mongoDB board",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/seolranlee/nodejs-mongodb-board.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/seolranlee/nodejs-mongodb-board/issues"
+  },
+  "homepage": "https://github.com/seolranlee/nodejs-mongodb-board#readme",
+  "dependencies": {
+    "express": "^4.17.0",
+    "supervisor": "^0.12.0"
+  }
+}
