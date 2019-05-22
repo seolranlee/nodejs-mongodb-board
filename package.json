@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/seolranlee/nodejs-mongodb-board#readme",
   "dependencies": {
+    "ejs": "^2.6.1",
     "express": "^4.17.0",
     "supervisor": "^0.12.0"
   }
