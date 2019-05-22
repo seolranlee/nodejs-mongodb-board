@@ -19,6 +19,7 @@
   "dependencies": {
     "ejs": "^2.6.1",
     "express": "^4.17.0",
+    "mongoose": "^5.5.10",
     "supervisor": "^0.12.0"
   }
 }
