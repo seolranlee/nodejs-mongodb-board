@@ -1,8 +1,11 @@
+// import modules
 var express = require('express');
 var path = require('path');
 var app = express();
 var mongoose = require('mongoose');
+var bodyParser = require('body-parser');
 
+// connect database
 mongoose.connect(process.env.MONGO_DB);
 var db = mongoose.connection;
 db.once('open', function () {
@@ -12,72 +15,63 @@ db.on('error',function (err) {
     console.log('DB ERROR :', err)
 });
 
-var dataSchema = mongoose.Schema({
-    name: String,
-    count: Number
+// model setting
+var postSchema = mongoose.Schema({
+    title: {type: String, required: true},
+    body: {type: String, required: true},
+    CreatedAt: {type: Date, default: Date.now},
+    updatedAt: Date
 });
+var Post = mongoose.model('post', postSchema);
 
-var Data = mongoose.model('data', dataSchema);
-Data.findOne({name: 'myData'}, function (err, data) {
-   if(err) return console.log('Data ERROR: ', err);
-   if(!data){
-       Data.create({name: 'myData', count: 0}, function (err, data) {
-           if(err) return console.log('Data ERROR: ', err);
-           console.log('Counter initialized :', data)
-       })
-   }
-});
+// view setting
+app.set('view engine', 'ejs');
 
-app.set("view engine", 'ejs');
+// set middlewares
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(bodyParser.json());
 
-// var data={count: 0};
-app.get('/',function (req, res) {
-    Data.findOne({name: 'myData'}, function (err, data) {
-        if(err) return console.log('Data ERROR: ', err);
-        data.count++;
-        data.save(function (err) {
-            if(err) return console.log('Data ERROR: ', err);
-            res.render('my_first_ejs', data);
-        })
+// 미들웨어(middleware)란?
+//
+// 서버에 도착한 신호는 router를 통해서 어떤 response를 할지 결정이 되는데,
+// router를 통하기 전에(서버도착 - router 중간에) 모든 신호들에게 수행되는 명령어를 미들웨어(middleware)라고 합니다.
+// app.use()를 통해 수행될 수 있으며,
+// 당연히 router보다 위에 위치해야 합니다.
 
+
+// set routes
+app.get('/posts', function (req, res) {
+    Post.find({}, function (err, posts) {
+        if(err) return res.json({success: false, message: err});
+        res.json({success: true, data: posts});
     })
-});
-
-app.get('/reset', function (req, res) {
-    setCounter(res, 0);
-});
-
-app.get('/set/count', function (req, res) {
-    if(req.query.count) setCounter(res, req.query.count); // http://localhost:3000/set/count?count=221
-    else getCounter(res);
-});
-
-app.get('/set/:num', function (req, res) {
-    if(req.params.num) setCounter(res, req.params.num);
-    else getCounter(res);
-});
-
-function setCounter(res, num){
-   console.log('setCounter');
-    Data.findOne({name: 'myData'}, function (err, data) {
-        if(err) return console.log('Data ERROR: ', err);
-        data.count = num;
-        data.save(function (err) {
-            if(err) return console.log('Data ERROR: ', err);
-            res.render('my_first_ejs', data);
-        })
-
+}); // index
+app.post('/posts', function (req, res) {
+   Post.create(req.body.post, function (err, post) {
+       if(err) return res.json({success: false, message: err});
+       res.json({success: true, data: post});
+   })
+}); // create
+app.get('/posts/:id', function (req, res) {
+    Post.findById(req.params.id, function (err, posts) {
+        if(err) return res.json({success: false, message: err});
+        res.json({success: true, data: posts});
     })
-}
-
-function getCounter(res){
-    console.log('getCounter');
-    Data.findOne({name: 'myData'}, function (err, data) {
-        if(err) return console.log('Data ERROR: ', err);
-        res.render('my_first_ejs', data);
+}); // show
+app.put('/posts/:id', function (req, res) {
+    req.body.post.updatedAt=Date.now();
+    Post.findByIdAndUpdate(req.params.id, req.body.post, function (err, posts) {
+        if(err) return res.json({success: false, message: err});
+        res.json({success: true, message: posts._id+" updated"});
     })
-}
+}); // update
+app.delete('/posts/:id', function (req, res) {
+    Post.findByIdAndRemove(req.params.id, function (err, posts) {
+        if(err) return res.json({success: false, message: err});
+        res.json({success: true, message: posts._id+" deleted"});
+    })
+}); // delete
+
 
 
 app.listen(3000, function () {
