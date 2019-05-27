@@ -19,7 +19,7 @@ db.on('error',function (err) {
 var postSchema = mongoose.Schema({
     title: {type: String, required: true},
     body: {type: String, required: true},
-    CreatedAt: {type: Date, default: Date.now},
+    createdAt: {type: Date, default: Date.now},
     updatedAt: Date
 });
 var Post = mongoose.model('post', postSchema);
@@ -40,12 +40,20 @@ app.use(bodyParser.json());
 
 
 // set routes
+// app.get('/posts', function (req, res) {
+//     Post.find({}, function (err, posts) {
+//         if(err) return res.json({success: false, message: err});
+//         res.render('posts/index', {data:posts})
+//     });
+// });
+
 app.get('/posts', function (req, res) {
-    Post.find({}, function (err, posts) {
+    Post.find({}).sort('-createdAt').exec(function (err, posts) {   // 최신 게시물 기준으로 재정렬
         if(err) return res.json({success: false, message: err});
-        res.json({success: true, data: posts});
-    })
+        res.render('posts/index', {data:posts})
+    });
 }); // index
+
 app.post('/posts', function (req, res) {
    Post.create(req.body.post, function (err, post) {
        if(err) return res.json({success: false, message: err});
@@ -53,9 +61,9 @@ app.post('/posts', function (req, res) {
    })
 }); // create
 app.get('/posts/:id', function (req, res) {
-    Post.findById(req.params.id, function (err, posts) {
+    Post.findById(req.params.id, function (err, post) {
         if(err) return res.json({success: false, message: err});
-        res.json({success: true, data: posts});
+        res.render('posts/show', {data: post});
     })
 }); // show
 app.put('/posts/:id', function (req, res) {
