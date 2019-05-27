@@ -30,6 +30,7 @@ app.set('view engine', 'ejs');
 // set middlewares
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended:true}));
 
 // 미들웨어(middleware)란?
 //
@@ -51,19 +52,23 @@ app.get('/posts', function (req, res) {
     Post.find({}).sort('-createdAt').exec(function (err, posts) {   // 최신 게시물 기준으로 재정렬
         if(err) return res.json({success: false, message: err});
         res.render('posts/index', {data:posts})
+        // res.json({success: true, data: posts});
     });
 }); // index
-
+app.get('/posts/new', function (req, res) {
+   res.render('posts/new');
+}); // new
 app.post('/posts', function (req, res) {
    Post.create(req.body.post, function (err, post) {
        if(err) return res.json({success: false, message: err});
-       res.json({success: true, data: post});
+       // res.json({success: true, data: post});
+       res.redirect('/posts');
    })
 }); // create
 app.get('/posts/:id', function (req, res) {
     Post.findById(req.params.id, function (err, post) {
         if(err) return res.json({success: false, message: err});
-        res.render('posts/show', {data: post});
+        res.render('/posts/show', {data: post});
     })
 }); // show
 app.put('/posts/:id', function (req, res) {
