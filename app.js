@@ -4,6 +4,7 @@ var path = require('path');
 var app = express();
 var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
+var methodOverride = require('method-override');
 
 // connect database
 mongoose.connect(process.env.MONGO_DB);
@@ -31,13 +32,14 @@ app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
+app.use(methodOverride('_method'));
 
 // 미들웨어(middleware)란?
 //
 // 서버에 도착한 신호는 router를 통해서 어떤 response를 할지 결정이 되는데,
-// router를 통하기 전에(서버도착 - router 중간에) 모든 신호들에게 수행되는 명령어를 미들웨어(middleware)라고 합니다.
+// router를 통하기 전에(서버도착 - router 중간에) 모든 신호들에게 수행되는 명령어를 미들웨어(middleware)라고 한다.
 // app.use()를 통해 수행될 수 있으며,
-// 당연히 router보다 위에 위치해야 합니다.
+// 당연히 router보다 위에 위치해야 한다.
 
 
 // set routes
@@ -51,7 +53,7 @@ app.use(bodyParser.urlencoded({extended:true}));
 app.get('/posts', function (req, res) {
     Post.find({}).sort('-createdAt').exec(function (err, posts) {   // 최신 게시물 기준으로 재정렬
         if(err) return res.json({success: false, message: err});
-        res.render('posts/index', {data:posts})
+        res.render('posts/index', {data:posts});
         // res.json({success: true, data: posts});
     });
 }); // index
@@ -68,7 +70,7 @@ app.post('/posts', function (req, res) {
 app.get('/posts/:id', function (req, res) {
     Post.findById(req.params.id, function (err, post) {
         if(err) return res.json({success: false, message: err});
-        res.render('/posts/show', {data: post});
+        res.render('posts/show', {data: post});
     })
 }); // show
 app.put('/posts/:id', function (req, res) {
@@ -81,7 +83,8 @@ app.put('/posts/:id', function (req, res) {
 app.delete('/posts/:id', function (req, res) {
     Post.findByIdAndRemove(req.params.id, function (err, posts) {
         if(err) return res.json({success: false, message: err});
-        res.json({success: true, message: posts._id+" deleted"});
+        // res.json({success: true, message: posts._id+" deleted"});
+        res.redirect('/posts');
     })
 }); // delete
 

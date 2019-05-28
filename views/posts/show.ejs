@@ -28,7 +28,11 @@
             <p class="body"><%= data.body %></p>
             <div class="tools">
                 <a href="/posts/<%=data._id%>/edit"><button>Edit</button></a>
-                <!--Delete button hdere-->
+                <!--Delete button here-->
+                <form class="btn_delete" action="/posts/<%= data._id%>?_method=delete" method="post">
+                    <!--form method는 post이지만 action에 ?_method=delete이 추가되어 신호가 덮어쓰기(override)가 된다-->
+                    <button type="submit">Delete</button>
+                </form>
             </div>
             <a href="/posts"><button>Back</button></a>
         </div>
