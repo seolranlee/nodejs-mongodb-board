@@ -73,11 +73,18 @@ app.get('/posts/:id', function (req, res) {
         res.render('posts/show', {data: post});
     })
 }); // show
+app.get('/posts/:id/edit', function (req, res) {
+    Post.findById(req.params.id, function (err, post) {
+        if(err) return res.json({success: false, message: err});
+        res.render('posts/edit', {data: post});
+    })
+}); // edit
 app.put('/posts/:id', function (req, res) {
     req.body.post.updatedAt=Date.now();
     Post.findByIdAndUpdate(req.params.id, req.body.post, function (err, posts) {
         if(err) return res.json({success: false, message: err});
-        res.json({success: true, message: posts._id+" updated"});
+        // res.json({success: true, message: posts._id+" updated"});
+        res.redirect('/posts/'+req.params.id)
     })
 }); // update
 app.delete('/posts/:id', function (req, res) {
