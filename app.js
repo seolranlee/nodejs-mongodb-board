@@ -3,6 +3,12 @@ var express = require('express');
 var path = require('path');
 var app = express();
 var mongoose = require('mongoose');
+
+var passport = require('passport');
+var session = require('express-session');
+var flash = require('connect-flash');
+var async = require('async');
+
 var bodyParser = require('body-parser');
 var methodOverride = require('method-override');
 
