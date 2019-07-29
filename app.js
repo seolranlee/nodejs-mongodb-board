@@ -31,6 +31,15 @@ var postSchema = mongoose.Schema({
 });
 var Post = mongoose.model('post', postSchema);
 
+var userSchema = mongoose.Schema({
+    email: {type: String, required: true, unique: true},
+    nickname: {type: String, required: true, unique: true},
+    password: {type: String, required: true},
+    createdAt: {type: Date, default: Date.now},
+});
+var User = mongoose.model('user', userSchema);
+
+
 // view setting
 app.set('view engine', 'ejs');
 
@@ -39,7 +48,49 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(methodOverride('_method'));
+app.use(flash());
 
+app.use(session({secret: 'MySecret'}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.serializeUser(function (user, done) {
+    done(null, user.id);    // 이때 id는 username이 아니라 db의 id이다.
+
+
+});
+
+passport.deserializeUser(function (id, done) {
+    User.findById(id, function (err, user) {
+        done(err, user);
+    });
+});
+
+var LocalStrategy = require('passport-local').Strategy;
+passport.use('local-login',
+    new LocalStrategy({
+            usernameField: 'email',
+            passwordField: 'password',
+            passReqToCallback: true,
+        },
+        function (req, email, password, done) {
+            User.findOne({'email' : email}, function (err, user) {
+                if(err) return done(err);
+
+                if(!user){
+                    req.flash('email', req.body.email);
+                    return done(null, false, req.flash('loginError', 'No user found'));
+                }
+                if(user.password != password){
+                    req.flash('email', req.body.email);
+                    return done(null, false, req.flash('loginError', 'Password does not Match.'));
+                }
+                return done(null, user);
+            })
+        }
+
+    )
+)
 // 미들웨어(middleware)란?
 //
 // 서버에 도착한 신호는 router를 통해서 어떤 response를 할지 결정이 되는데,
@@ -55,6 +106,40 @@ app.use(methodOverride('_method'));
 //         res.render('posts/index', {data:posts})
 //     });
 // });
+
+
+// set home routes
+app.get('/', function (req, res) {
+    res.redirect('/posts');
+});
+
+app.get('/login', function (req, res) {
+    res.render('login/login', {
+        email:req.flash('email')[0],
+        loginError:req.flash('loginError')
+    })
+});
+
+app.post('/login',function (req, res, next) {
+        req.flash('email'); // flash email data
+        if(req.body.email.length === 0 || req.body.password.length === 0){
+            req.flash('email', req.body.email);
+            req.flash('loginError', 'Please enter both email and password.');
+            res.redirect('/login');
+        }else{
+            next();
+        }
+    }, passport.authenticate('local-login', {
+        successRedirect: '/posts',
+        failureRedirect: '/login',
+        failureFlash: true,
+    })
+);
+
+app.get('/logout', function (req, res) {
+    req.logout();
+    res.redirect('/')
+});
 
 app.get('/posts', function (req, res) {
     Post.find({}).sort('-createdAt').exec(function (err, posts) {   // 최신 게시물 기준으로 재정렬
