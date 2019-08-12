@@ -141,10 +141,121 @@ app.get('/logout', function (req, res) {
     res.redirect('/')
 });
 
+// set user routes
+app.get('/users/new', function (req, res) {
+    res.render('users/new', {
+            formData: req.flash('formData')[0],
+            emailError: req.flash('emailError')[0],
+            nicknameError: req.flash('nicknameError')[0],
+            passwordError: req.flash('passwordError')[0]
+        }
+    );
+}); // new
+
+app.post('/users', checkUserRegValidation, function (req, res, next) {
+    User.create(req.body.user, function (err, user) {
+        if(err) return res.json({
+            success: false,
+            message: err
+        });
+        res.redirect('/login');
+    });
+}); // create
+
+app.get('/users/:id', function (req, res) {
+    User.findById(req.params.id, function (err, user) {
+        if(err) return res.json({
+            success: false,
+            message: err
+        });
+        res.render('users/show', {user: user});
+    });
+}); // show
+
+app.get('/users/:id/edit', function (req, res) {
+    User.findById(req.params.id, function (err, user) {
+        if(err) return res.json({
+            success: false,
+            message: err
+        });
+        res.render('users/edit', {
+            user: user,
+            formData: req.flash('formData')[0],
+            emailError: req.flash('emailError')[0],
+            nicknameError: req.flash('nicknameError')[0],
+            passwordError: req.flash('passwordError')[0]
+        });
+    })
+
+}); // edit
+
+app.put('/users/:id', checkUserRegValidation, function (req, res) {
+    User.findById(req.params.id, req.body.user, function (err, user) {
+        if(err) return res.json({success: false, message: err});
+        if(req.body.user.password == user.password){
+
+            if(req.body.user.newPassword){
+                req.body.user.password = req.body.user.newPassword;
+            }else{
+                delete req.body.user.password;
+            }
+            User.findByIdAndUpdate(req.params.id, req.body.user, function (err, user) {
+                if(err) return res.json({success: false, message: err});
+                res.redirect('/users/'+req.params.id);
+            });
+        } else {
+            req.flash('formData', req.body.user);
+            req.flash('passwordError', '- Invalid password');
+            req.redirect('/users/'+req.params.id+"edit");
+        }
+    });
+}); // update
+
+
+//function
+
+function checkUserRegValidation(req, res, next){
+    var isValid = true;
+
+    async.waterfall(
+        [function (callback) {
+            User.findOne({email: req.body.user.email, id: {$ne: mongoose.Types.ObjectId(req.params.id)}},
+                function (err, user) {
+                    if(user){
+                        isValid = false;
+                        req.flash('emailError','- This email is already registered.');
+                    }
+                    callback(null, isValid);
+                }
+            );
+        }, function (isValid, callback) {
+            User.findOne({nickname: req.body.user.nickname, _id: {$ne: mongoose.Types.ObjectId(req.params.id)}},
+                function (err, user) {
+                    if(user){
+                        isValid=false;
+                        req.flash('nicknameError', '- This nickname is already registered.');
+                    }
+                    callback(null, isValid);
+                }
+            );
+        }], function (err, isValid) {
+            if(err) return res.json({success:'false', message:err});
+            if(isValid){
+                return next();
+            }else {
+                req.flash('formData', req.body.user);
+                res.redirect('back');
+            }
+        }
+    )
+}
+
+
+// set posts routes
 app.get('/posts', function (req, res) {
     Post.find({}).sort('-createdAt').exec(function (err, posts) {   // 최신 게시물 기준으로 재정렬
         if(err) return res.json({success: false, message: err});
-        res.render('posts/index', {data:posts});
+        res.render('posts/index', {data:posts, user: req.user});
         // res.json({success: true, data: posts});
     });
 }); // index
