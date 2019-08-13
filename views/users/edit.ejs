@@ -12,7 +12,7 @@
 
     <!--views/users/edit.ejs-->
     <div class="edit">
-        <h3>Update User Information</h3>
+        <h3>Update Users Information</h3>
         <form id="update_user" class="users_form" action="/users/<%= user.id%>?_method=put" method="post">
             <label>Current Password* <span id="password_error" class="error_message"><%= passwordError?passwordError:"" %></span></label>
             <input type="password" id="password" name="user[password]" value="">
