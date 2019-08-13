@@ -28,6 +28,7 @@ db.on('error',function (err) {
 var postSchema = mongoose.Schema({
     title: {type: String, required: true},
     body: {type: String, required: true},
+    author: {type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true},
     createdAt: {type: Date, default: Date.now},
     updatedAt: Date
 });
@@ -279,16 +280,17 @@ function checkUserRegValidation(req, res, next){
 
 // set posts routes
 app.get('/posts', function (req, res) {
-    Post.find({}).sort('-createdAt').exec(function (err, posts) {   // 최신 게시물 기준으로 재정렬
+    Post.find({}).populate('author').sort('-createdAt').exec(function (err, posts) {   // 최신 게시물 기준으로 재정렬
         if(err) return res.json({success: false, message: err});
         res.render('posts/index', {data:posts, user: req.user});
         // res.json({success: true, data: posts});
     });
 }); // index
-app.get('/posts/new', function (req, res) {
-   res.render('posts/new');
+app.get('/posts/new', isLoggedIn, function (req, res) {
+   res.render('posts/new', {user: req.user});
 }); // new
-app.post('/posts', function (req, res) {
+app.post('/posts', isLoggedIn, function (req, res) {
+    req.body.post.author = req.user._id;
    Post.create(req.body.post, function (err, post) {
        if(err) return res.json({success: false, message: err});
        // res.json({success: true, data: post});
@@ -296,31 +298,40 @@ app.post('/posts', function (req, res) {
    })
 }); // create
 app.get('/posts/:id', function (req, res) {
-    Post.findById(req.params.id, function (err, post) {
+    Post.findById(req.params.id).populate('author').exec(function (err, post) {
         if(err) return res.json({success: false, message: err});
-        res.render('posts/show', {data: post});
+        res.render('posts/show', {data: post, user: req.user});
     })
 }); // show
-app.get('/posts/:id/edit', function (req, res) {
+app.get('/posts/:id/edit', isLoggedIn, function (req, res) {
     Post.findById(req.params.id, function (err, post) {
         if(err) return res.json({success: false, message: err});
-        res.render('posts/edit', {data: post});
+        if(!req.user._id.equals(post.author)) return res.json({success:false, messgae: 'Unaauthrized Attempt'});
+        res.render('posts/edit', {data: post, user: req.user});
     })
 }); // edit
-app.put('/posts/:id', function (req, res) {
+app.put('/posts/:id', isLoggedIn, function (req, res) {
     req.body.post.updatedAt=Date.now();
-    Post.findByIdAndUpdate(req.params.id, req.body.post, function (err, posts) {
-        if(err) return res.json({success: false, message: err});
-        // res.json({success: true, message: posts._id+" updated"});
-        res.redirect('/posts/'+req.params.id)
-    })
+    Post.findById(req.params.id, function (err, post) {
+        if(err) return res.json({success:false, messgae: err});
+        if(!req.user._id.equals(post.author)) return res.json({success:false, messgae: 'Unaauthrized Attempt'});
+        Post.findByIdAndUpdate(req.params.id, req.body.post, function (err, posts) {
+            if(err) return res.json({success: false, message: err});
+            // res.json({success: true, message: posts._id+" updated"});
+            res.redirect('/posts/'+req.params.id)
+        })
+    });
 }); // update
 app.delete('/posts/:id', function (req, res) {
-    Post.findByIdAndRemove(req.params.id, function (err, posts) {
-        if(err) return res.json({success: false, message: err});
-        // res.json({success: true, message: posts._id+" deleted"});
-        res.redirect('/posts');
-    })
+    Post.findById(req.params.id, function (err, post) {
+        if(err) return res.json({success:false, messgae: err});
+        if(!req.user._id.equals(post.author)) return res.json({success:false, messgae: 'Unaauthrized Attempt'});
+        Post.findByIdAndRemove(req.params.id, function (err, posts) {
+            if(err) return res.json({success: false, message: err});
+            // res.json({success: true, message: posts._id+" deleted"});
+            res.redirect('/posts');
+        })
+    });
 }); // delete
 
 
